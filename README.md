@@ -1,4 +1,11 @@
 # Crawler
-A small side project on writing a web crawler on Java and C++
+A small side project on writing a concurrent web crawler using Java
 
-Each implementation is in the separate folder and the Cpp one is still in development as well, as I'm just not sure if there is any benefit in term of speed for using cpp, since it still has to wait for the download...
+
+Crawler parses the HTML of the page with regex to find the urls to visit and runs on them.
+
+Returns a few errors:
+
+-IOException for pages that were identified as URLs, but the Crawler was unable to buffer
+
+-MalformedURLException for the pages it was unable to identify as URLs
