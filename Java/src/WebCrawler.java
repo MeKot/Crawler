@@ -15,29 +15,31 @@ import static java.util.concurrent.Executors.newFixedThreadPool;
 public class WebCrawler {
 
   //Constants
+
   private static final int N_OF_THREADS = 4;
-  private static final int TIMEOUT = 20;
+  private static final int TIMEOUT = 10;
   static final int NUMBER_OF_PAGES_CRAWLED = 1000;
-  static String REGEX = "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)";
+  static String REGEX = "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}"
+          + "\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)";
 
-  //For now implementing them as volatile, later will introduce locks for speed
-
+  //Implemented as volatile as more fine-grained locks will not contribute to
+  // the speed as such, due to the time it takes to download the page.
   static volatile Queue<String> targets = new LinkedList<>();
-  static volatile Set<String> visited = new HashSet<>();
+  static volatile Set<String> visited   = new HashSet<>();
 
   private ExecutorService pool;
 
   public WebCrawler() {
-    this.pool = newFixedThreadPool(N_OF_THREADS);
+    this.pool  = newFixedThreadPool(N_OF_THREADS);
   }
 
   public void startCrawling(String initialUrl) throws InterruptedException{
     targets.add(initialUrl);
     pool.execute(new CrawlingTread());
-    TimeUnit.SECONDS.sleep(2); //for the first thread to fill in the list
-    pool.execute(new CrawlingTread());
-    pool.execute(new CrawlingTread());
-    pool.execute(new CrawlingTread());
+    TimeUnit.SECONDS.sleep(2); //for the first thread to process a page
+    for (int i = 1; i< N_OF_THREADS; ++i) {
+      pool.execute(new CrawlingTread());
+    }
     pool.awaitTermination(TIMEOUT, TimeUnit.SECONDS);
     if (pool.isTerminated()) {
       printResults();

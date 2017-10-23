@@ -12,6 +12,10 @@ import java.util.stream.Collectors;
  */
 public class CrawlingTread implements Runnable {
 
+  /**
+   * Implementing the Runnable interface, in order for each thread to process
+   * the pages.
+   */
   @Override
   public void run() {
     while (!WebCrawler.targets.isEmpty()) {
@@ -27,23 +31,25 @@ public class CrawlingTread implements Runnable {
           url = new URL(currentUrl);
           br = new BufferedReader(new InputStreamReader(url.openStream()));
           fileReadOk = true;
-        } catch (MalformedURLException e) {
+        } catch (MalformedURLException e) { //Bad URL
           System.out.println("=== MalformedURLException : " + currentUrl + " ===");
           currentUrl = WebCrawler.targets.poll();
           fileReadOk = false;
-        } catch (IOException ioe) {
+        } catch (IOException ioe) { //Cannot open the stream from the url
           System.out.println("=== IOException : " + currentUrl + " ===");
           currentUrl = WebCrawler.targets.poll();
           fileReadOk = false;
         }
       }
-      //Could this expose a DDoS attack if the page has a lot of lines that will result in heap overflow..?
-      //I'll assume no for now and come back later, if have time
       String page = br.lines().collect(Collectors.joining());
       Pattern urlPattern = Pattern.compile(WebCrawler.REGEX);
       Matcher matcher = urlPattern.matcher(page);
-
-      while (matcher.find()) {
+      //Checking for the interrupt, so that shutdownNow will have an immediate effect
+      if (Thread.interrupted()) {
+        System.out.println("One of the Threads was interrupted. Aborting...");
+        return;
+      }
+      while (matcher.find() && !Thread.interrupted()) {
         String newUrl = matcher.group();
 
         if (!WebCrawler.visited.contains(newUrl)) {
@@ -51,6 +57,7 @@ public class CrawlingTread implements Runnable {
           WebCrawler.targets.add(newUrl);
           System.out.println("Site added to be crawled : " + newUrl);
         }
+
       }
     }
   }
